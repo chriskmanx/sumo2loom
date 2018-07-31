@@ -14,5 +14,5 @@ The original author is Favid Flater at the U.S. National Institute of Standards 
 
 SUMO has changed format in more than one way since Sumo2Loom was originally written: Both syntax and file formars have evolved. In particular, multi-language support was added while the original Sumo2Loom depended on ASCII characters. I wanted to tackle semantic changes and changes relating to format separetely so notwithstanding the desirability of support for non English users, began by stripping out wide character support. As this is not intended to be permanent, I consigned most of this work into Bash scripts which has allowed me to focus on the smantic aspects of the migration. At present we can convert SUMO into PowerLoom KIF but there are as yet incompatibilities that are being worked in - time permitting.
 
-
+Bash scripts are presently hard-coded to assume directort locations. You may need to modify this to suit your needs.
 
