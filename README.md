@@ -8,7 +8,7 @@ After a review of available ontologies and inference engines it was decided to t
 
 # Author and Maintenance
 
-The original author is Favid Flater at the U.S. National Institute of Standards and Technology (NIST). The current maintainer is Christoph Kohlhepp. See Maintainer-Msg.pdf.  Any derived work is placed under the GNU Public License. Please refer to LICENSE.
+The original author is David Flater at the U.S. National Institute of Standards and Technology (NIST). The current maintainer is Christoph Kohlhepp. See Maintainer-Msg.pdf.  Any derived work is placed under the GNU Public License. Please refer to LICENSE.
 
 # Comments
 
