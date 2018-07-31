@@ -1,0 +1,945 @@
+;; The following notice was inserted at the request of Adam Pease of
+;; Teknowledge:
+
+;; Access to and use of these products is governed by the GNU General Public 
+;; License <http://www.gnu.org/copyleft/gpl.html>.
+
+
+;;This section is from Olga Babko-Malaya's file: OntologyOfService.txt
+;; Upper Ontology of Services
+
+;; definition of WebService
+(subclass WebService ComputerProgram)
+(documentation WebService "Web sites that do not merely provide static information but allow one to effect some action or change in the world, such as the sale of a product or the control of a physical device.")
+
+(=>
+	(instance ?Service WebService)
+	(exists (?Resource)
+		(providesAService ?Service ?Resource)))
+
+(=>
+	(and
+		(instance ?Service WebService)
+		(instance ?Using UsingAService)
+		(patient ?Using ?Service)
+		(agent ?Using ?User)
+		(providesAService ?Service ?Provider))
+	(exists (?Contract)
+		(and
+			(instance ?Contract ServiceContract)
+			(agreementMember ?Contract ?User)
+			(agreementMember ?Contract ?Provider))))
+
+; definition of PrimitiveService
+(subclass PrimitiveService WebService)
+(documentation PrimitiveService "Primitive services are services which invoke only a single Web-accessible computer program, sensor, or  device that does not rely upon another Web service, and there is no ongoing interaction between the user and the service, beyond a simple response. For example, a service that returns a postal code or the longitude and latitude when given an address would be in this category.")
+
+;; definition of ComplexService
+(subclass ComplexService WebService)
+(documentation ComplexService
+"Complex services are composed of multiple primitive services, often requiring an interaction or conversation between the user and the services, so that the user can make choices and provide information conditionally.")
+
+
+;; definition of UsingAService
+(subclass UsingAService ComputerProcess)
+(documentation UsingAService "Interaction between the user and the service")
+
+
+(=>
+	(instance ?Using UsingAService)
+	(exists (?Service)
+		(and
+			(instance ?Service WebService)
+			(patient ?Using ?Service))))
+
+(=>
+	(instance ?Using UsingAService)
+	(exists (?User)
+		(and
+			(instance ?User ServiceUser)
+			(agent ?Using ?User))))
+
+(=>
+	(and
+		(instance ?Using UsingAService)
+		(instance ?Service WebService)
+		(instance ?User ServiceUser)
+		(patient ?Using ?Service)
+		(agent ?Using ?User))
+	(precondition ?Using (hasAccess ?User ?Service)))
+
+
+;; definition of ServiceUser
+(subclass ServiceUser Agent)
+(documentation ServiceUser "An Agent who requests a particular service")
+
+
+(=>
+	(instance ?User ServiceUser)
+	(exists (?Process)
+		(and
+			(instance ?Process ServiceProcess)
+			(effector ?Process ?User))))
+
+;; definition of AccessingAService
+(subclass AccessingAService ComputerProcess)
+(documentation AccessingAService "To enter an online service")
+
+
+(=>
+	(instance ?Access AccessingAService)
+	(exists (?Service)
+		(and
+			(instance ?Service WebService )
+			(destination ?Access ?Service))))
+
+
+(=>
+	(and
+		(instance ?Access AccessingAService)
+		(instance ?Service WebService )
+		(destination ?Access ?Service)
+		(agent ?Access ?Agent))
+	(hasPurposeForAgent ?Access
+		(exists (?Using)
+			(and
+				(instance ?Using UsingAService)
+				(patient ?Using ?Service)
+				(agent ?Using ?Agent))) ?Agent))
+
+(=>
+	(and
+		(instance ?Access AccessingAService)
+		(instance ?Service WebService )
+		(destination ?Access ?Service)
+		(agent ?Access ?Agent))
+	(holdsDuring (ImmediateFutureFn (WhenFn ?Access)) (hasAccess ?User ?Service)))
+
+;; definition of hasAccess
+(instance hasAccess AsymmetricRelation)
+(domain hasAccess 1 ServiceUser)
+(domain hasAccess 2 WebService )
+(documentation hasAccess "(hasAccess ?User ?Service) holds if ?User is authorized to use the WebService ?Service")
+
+(=>
+	(hasAccess ?User ?Service)
+	(exists (?Using)
+		(and
+			(subclass ?Using UsingAService)
+			(forall (?Use)
+				(=>
+					(instance ?Use ?Using)
+					(patient ?Use ?Service)))
+			(holdsAuthority ?Using ?User))))
+
+
+
+;; definition of ServiceProfile
+(subclass ServiceProfile ContentBearingObject)
+(documentation ServiceProfile  "The service profile tells what the service does; that is, it gives the type of information needed by a service-seeking agent to determine whether the service meets its needs (typically such things as input and output types, preconditions and postconditions, and binding patterns).")
+
+(=>
+	(instance ?Profile ServiceProfile)
+	(exists (?Service)
+		(presentsAProfile ?Profile ?Service)))
+
+
+;; definition of ServiceModel
+(subclass ServiceModel ContentBearingObject)
+(documentation ServiceModel "The service model tells how the service works; that is, it describes what happens when the service is carried out.")
+
+(=>
+	(instance ?Model ServiceModel)
+	(exists (?Service)
+		(implementsAModel ?Model ?Service)))
+
+(=>
+	(and
+		(instance ?Model ServiceModel)
+		(implementsAModel ?ModelService)
+		(instance ?Using ?UsingAService)
+		(patient ?Using ?Service))
+	(represents ?Model ?Using))
+
+
+;; definition of ServiceGrounding
+(subclass ServiceGrounding ContentBearingObject)
+(documentation ServiceGrounding " ServiceGrounding specifies the details of how an agent can access a service.  Typically a grounding may specify some well known communications protocol (e.g., RPC, HTTP-FORM, CORBA IDL, SOAP, Java remote calls, OAA, Jini), and service-specific  details such as port numbers used in contacting the service.  In  addition, the grounding must specify, for each abstract type specified  in the ServiceModel, an unambigous way of exchanging data elements of  that type with the service (that is, marshalling / serialization  techniques employed).")
+
+(=>
+	(instance ?Grounding ServiceGrounding)
+	(exists (?Service)
+		(supportsAGrounding ?Grounding ?Service)))
+
+(=>
+	(and
+		(instance ?Grounding ServiceGrounding)
+		(supportsAGrounding ?Grounding ?Service)
+		(instance ?Access AccessingAService)
+		(destination ?Access ?Service))
+	(represents ?Grounding ?Access))
+
+
+
+;; definition of presentsAProfile
+(instance presentsAProfile AsymmetricRelation)
+(subrelation presentsAProfile represents)
+(domain presentsAProfile 1 ServiceProfile)
+(domain presentsAProfile 2 WebService)
+(documentation presentsAProfile
+"(presentsAProfile ?Profile ?Service) means that ?Profile represents the type of information needed by a service-seeking agent to determine  whether the service ?Service meets its needs")
+
+;; definition of implementsAModel
+(instance implementsAModel AsymmetricRelation)
+(subrelation implementsAModel represents)
+(domain implementsAModel 1 ServiceModel)
+(domain implementsAModel 2 WebService)
+(documentation implementsAModel"(implementsAModel ?Model ?Service) holds if ?Model describes what happens when the service ?Service is carried out")
+
+;; definition of supportsAGrounding
+(instance supportsAGrounding AsymmetricRelation)
+(subrelation supportsAGrounding represents)
+(domain supportsAGrounding 1 ServiceGrounding)
+(domain supportsAGrounding 2 WebService)
+(documentation supportsAGrounding "(supportsAGrounding ?Grounding ?Service) holds if ?Grounding represents the details  of how an agent can access the service ?Service")
+
+;; definition of ServiceProvider
+(subclass ServiceProvider Website)
+(documentation ServiceProvider "A website which provides a service")
+
+(=>
+	(instance ?Resource ServiceProvider)
+	(exists (?Service)
+		(providesAService ?Resource ?Service)))
+
+;; definition of providesAService
+(instance providesAService AsymmetricRelation)
+(domain providesAService 1 WebService )
+(domain providesAService 2 ServiceProvider)
+(documentation providesAService "(providesAService ?Service ?Provider) holds if ?Provider is a website which offers the WebService ?Service")
+
+;; definition of Website
+(subclass Website Server)
+(documentation Website "A server that contains Web pages and other files which is online to the Internet 24 hours a day.")
+
+;; Ontology of Service Profiles
+
+;; definition of serviceName
+(subrelation serviceName represents)
+(domain serviceName 1 SymbolicString)
+(domain serviceName 2 WebService)
+(documentation serviceName "The Service Name refers to the name of the service that is being offered")
+
+(=>
+	(and
+		(serviceName ?Name ?Service)
+		(presentsAProfile ?Profile ?Service))
+	(subsumesContentInstance ?Profile ?Name))
+
+
+;; definition of intendedPurpose
+(instance intendedPurpose AsymmetricRelation)
+(domain intendedPurpose 1 WebService)
+(domain intendedPurpose 2 Formula)
+(documentation intendedPurpose
+"(intendedPurpose ?Service ?Purpose) means that ?Purpose provides a brief description of ?Service.  This would typically appear within an advertisement to summarise  what the service offers, or within a  request to describe what is being requested")
+
+(=>
+	(and
+		(intendedPurpose ?Service ?Purpose)
+		(presentsAProfile ?Profile ?Service))
+	(subsumesContentInstance ?Profile ?Purpose))
+
+(=>
+	(and
+		(intendedPurpose ?Service ?Purpose)
+		(programRunning ?Process ?Service))
+	(hasPurpose ?Process ?Purpose))
+
+;; definition of requestedBy
+(instance requestedBy AsymmetricRelation)
+(domain requestedBy 1 WebService)
+(domain requestedBy 2 Agent)
+(documentation requestedBy "This predicate links the service to an Agent who requests the service.")
+
+(=>
+	(requestedBy ?Service ?Agent)
+	(exists (?Request)
+		(and
+			(instance ?Request UserRequest)
+			(effector ?Request ?Agent))))
+
+;; definition of domainResource
+(instance domainResource AsymmetricRelation)
+(domain domainResource 1 WebService)
+(domain domainResource 2 Formula)
+(documentation domainResource "DomainResource are resources that are necessary for the task to be executed.They may include  computational resources such as bandwidth or disk space as well as more material resources consumed  when the service controls some machinery")
+
+(=>
+	(and
+		(domainResource ?Service ?Resource)
+		(presentsAProfile ?Profile ?Service))
+	(subsumesContentInstance ?Profile ?Resource))
+
+
+;; definition of serviceInput
+(instance serviceInput AsymmetricRelation)
+(subrelation serviceInput precondition)
+(domain serviceInput 1 WebService)
+(domain serviceInput 2 Formula)
+(documentation serviceInput
+"An input specifies the information that the service requires to proceed with the computation. For  example, a book-selling service could require the credit card number and bibliographical information  of the book  to sell.")
+
+(=>
+	(and
+		(serviceInput ?Service ?Input)
+		(presentsAProfile ?Profile ?Service))
+	(subsumesContentInstance ?Profile ?Input))
+
+;; definition of serviceOutput
+(instance serviceOutput AsymmetricRelation)
+(domain serviceOutput 1 WebService)
+(domain serviceOutput 2 Formula)
+(documentation serviceOutput "An output specifies what is the result of the operation of the service.")
+
+(=>
+	(and
+		(serviceOutput ?Service ?Output)
+		(presentsAProfile ?Profile ?Service))
+	(subsumesContentInstance ?Profile ?Output))
+
+(=>
+	(and
+		(output ?Service ?Output)
+		(programRunning ?Process ?Service))
+	(result ?Process ?Output))
+
+;; definition of conditionalOutput
+(instance conditionalOutput AsymmetricRelation)
+(subrelation conditionalOutput output)
+(domain conditionalOutput 1 WebService)
+(domain conditionalOutput 2 Formula)
+
+
+;; definition of servicePrecondition
+(instance servicePrecondition AsymmetricRelation)
+(subrelation servicePrecondition precondition)
+(domain servicePrecondition 1 WebService)
+(domain servicePrecondition 2 Formula)
+(documentation servicePrecondition "Preconditions present one or more logical conditions that should be satisfied prior to the service being requested")
+
+(=>
+	(and
+		(servicePrecondition ?Service ?Formula)
+		(presentsAProfile ?Profile ?Service))
+	(subsumesContentInstance ?Profile ?Formula))
+
+;; definition of accessCondition
+(instance accessCondition AsymmetricRelation)
+(domain accessCondition 1 WebService)
+(domain accessCondition 2 Formula)
+(documentation accessCondition
+"Access conditions are conditions or restrictions that have to be satisfied prior to engaging the service.")
+
+(=>
+	(and
+		(accessCondition ?Service ?Condition)
+		(presentsAProfile ?Profile ?Service))
+	(subsumesContentInstance ?Profile ?Condition))
+
+(=>
+	(and
+		(accessCondition ?Service ?Condition)
+		(instance ?Access AccessingAService)
+		(destination ?Access ?Service))
+	(precondition ?Access ?Condition))
+
+;; definition of serviceEffect
+(instance serviceEffect AsymmetricRelation)
+(domain serviceEffect 1 WebService)
+(domain serviceEffect 2 ComputerProcess)
+(documentation serviceEffect "An effect is an event that is caused by the successful execution of a service.")
+
+(=>
+	(serviceEffect ?Service ?Effect)
+	(effector ?Effect ?Service))
+
+;; definition of conditionalEffect
+(subrelation conditionalEffect serviceEffect)
+(domain conditionalEffect 1 WebService)
+(domain conditionalEffect 2 ComputerProcess)
+
+;; definition of geographicRadius
+(instance geographicRadius AsymmetricRelation)
+(domain geographicRadius 1 WebService)
+(domain geographicRadius 2 GeographicArea)
+(documentation geographicRadius  "The Geographic Radius refers to the geographic scope of the	service.  This may be at the global or national scale (e.g. for ecommerce) or at a local scale (eg pizza delivery)")
+
+;; definition of degreeOfQuality
+(instance degreeOfQuality AsymmetricRelation)
+(subrelation degreeOfQuality attribute)
+(domain degreeOfQuality 1 WebService)
+(domain degreeOfQuality 2 ServiceAttribute)
+(documentation degreeOfQuality "DegreeOfQuality provide qualifications about the service.")
+
+;; definition of ServiceAttribute
+(subclass ServiceAttribute Attribute)
+
+;; definition of CheapestService
+(instance CheapestService ServiceAttribute)
+
+;; definition of FastestService
+(instance FastestService ServiceAttribute)
+
+;; definition of averageResponseTime
+(instance averageResponseTime AsymmetricRelation)
+(subrelation averageResponseTime responseTime)
+(domain averageResponseTime 1 WebService)
+(domain averageResponseTime 2 TimeInterval)
+
+;; definition of maxResponseTime
+(instance maxResponseTime AsymmetricRelation)
+(subrelation maxResponseTime responseTime)
+(domain maxResponseTime 1 WebService)
+(domain maxResponseTime 2 TimeInterval)
+
+;; definition of communicationThru
+(instance communicationThru AsymmetricRelation)
+(domain communicationThru 1 WebService)
+(domain communicationThru 2 Formula)
+(documentation communicationThru "communicationThru is a property of a Service Profile.	This property provides high level information on how a service may communicate, such as the ACL (eg FIPA, KQML, SOAP etc).  This summarises the descriptions provided by the Service Grounding and are used when matching services; it is not intended to replace the	detail provided by the Service Grounding.")
+
+(=>
+	(and
+		(communicationThru ?Service ?Formula)
+		(presentsAProfile ?Profile ?Service))
+	(subsumesContentInstance ?Profile ?Formula))
+
+
+;; definition of serviceType
+(instance serviceType AsymmetricRelation)
+(domain serviceType 1 WebService)
+(domainSubclass serviceType 2 WebService)
+(documentation serviceType "The Service Type refers to a high level classification of the service, for example B2B, B2C etc")
+
+;; definition of B2BService
+(subclass B2BService WebService)
+
+;; definition of B2CService
+(subclass B2CService WebService)
+
+;; definition of serviceProduct
+(instance serviceProduct AsymmetricRelation)
+(domain serviceProduct 1 WebService)
+(domain serviceProduct 2 Artifact)
+
+;; definition of qualityGuarantee
+(instance qualityGuarantee AsymmetricRelation)
+(domain qualityGuarantee 1 WebService)
+(domain qualityGuarantee 2 Formula)
+(documentation qualityGuarantee "QualityGuarantees are guarantees that the service promises to deliver, such as guaranteeing to provide the lowest possible interest rate, or a response within 3 minutes, etc.")
+
+(=>
+	(and
+		(qualityGuarantee ?Service ?Promise)
+		(presentsAProfile ?Profile ?Service))
+	(subsumesContentInstance ?Profile ?Promise))
+
+;; definition of qualityRating
+(instance qualityRating AsymmetricRelation)
+(domain qualityRating 1 WebService)
+(domain qualityRating 2 ServiceRating)
+(documentation qualityRating "The quality rating property represents an expandable list of rating RDF properties that may accompany a service profile. These ratings refer to industry accepted ratings, such as the Dun and Bradstreet Rating for businesses, or the Star rating for Hotels.")
+
+;; definition of HotelStarRating
+(subclass HotelStarRating ServiceRating)
+
+;; definition of DAndBRating
+(subclass DAndBRating ServiceRating)
+
+;; definition of Advertisement
+(subclass Advertisement ServiceProfile)
+(documentation Advertisement "This class is a subclass of the service profile and represents the class that is used to advertise the service with other entities, such as middle agents")
+
+;; definition of ServiceRequest
+(subclass ServiceRequest UserRequest)
+(documentation ServiceRequest "This class represents the class that is used to describe service requests")
+
+(=>
+	(instance ?Request ServiceRequest)
+	(exists (?Service)
+		(destination ?Request ?Service)))
+
+
+;; definition of serviceLocation
+(domain serviceLocation 1 WebService)
+(domain serviceLocation 2 GeographicArea)
+(documentation serviceLocation "This predicate limits the scope or availability of a service to some area")
+
+
+;; Ontology of Processes
+
+
+;; definition of ServiceProcess
+(subclass ServiceProcess ComputerProcess)
+(documentation ServiceProcess "A subclass of ComputerProcess which executes a WebService")
+
+(=>
+	(instance ?Process ServiceProcess)
+	(exists (?Service)
+		(and
+			(instance ?Service WebService)
+			(programRunning ?Process ?Service))))
+
+;; definition of topLevelProcess
+(subrelation topLevelProcess subProcess)
+(domain topLevelProcess 1 ComputerProcess)
+(domain topLevelProcess 2 ServiceProcess)
+
+;; definition of processPrecondition
+(subrelation processPrecondition precondition)
+(domain processPrecondition 1 ComputerProcess)
+(domain processPrecondition 2 Formula)
+(documentation processPrecondition "Process preconditions may include knowledge preconditions (agent knows credit card number) as well as world Precondition (baud rate > 56Kb)")
+
+;; definition of processEffect
+(instance processEffect AsymmetricRelation)
+(domain processEffect 1 ComputerProcess)
+(domain processEffect 2 Formula)
+(documentation processEffect "(processEffect ?Process ?Effect) means that ?Effect describes the effects of the process")
+
+(=>
+	(and
+		(processEffect ?Process ?EffectDescription)
+		(represents ?EffectDescription ?Effect))
+	(causes ?Process ?Effect))
+
+
+
+;; The following temporal predicates can be replaced by the SUMO temporal predicates, as indicated by the'subrelation' relation or corresponding KIF formulas
+
+;; definition of atTime
+(subrelation atTime existant)
+(domain atTime 1 ServiceProcess)
+(domain atTime 2 TimePoint)
+(documentation atTime "Time of an instantaneous Event")
+
+;; definition of startTime
+(instance startTime TemporalRelation)
+(instance startTime AsymmetricRelation)
+(domain startTime 1 ServiceProcess)
+(domain startTime 2 TimePoint)
+(documentation startTime "Start time for the Event")
+
+
+(=>
+	(startTime ?Process ?Point)
+	(equal ?Point (BeginFn (WhenFn ?Process))))
+
+;; definition of endTime
+(instance endTime TemporalRelation)
+(instance endTime AsymmetricRelation)
+(domain endTime 1 ServiceProcess)
+(domain endTime 2 TimePoint)
+(documentation endTime "End time for the Event")
+
+(=>
+	(endTime ?Process ?Point)
+	(equal ?Point (EndFn (WhenFn ?Process))))
+
+;; the predicate 'during' can be replaced by SUMO constants 'duration' or 'WhenFn'.
+
+
+;; Ontology of Composite Events
+
+;; definition of CompositeProcess
+(subclass CompositeProcess ServiceProcess)
+(documentation CompositeProcess
+"CompositeProcesses are complex events that have additional properties with respect to the ordering and conditional execution of individual events")
+
+(=>
+	(instance ?Process CompositeEvent)
+	(exists (?Component)
+		(processComponent ?Component ?Process)))
+
+;; definition of processComponent
+(subrelation processComponent subProcess)
+(domain processComponent 1 ComputerProcess)
+(domain processComponent 2 ServiceProcess)
+
+;; definition of SequenceProcess
+(subclass SequenceProcess CompositeProcess)
+(documentation SequenceProcess "A list of processes to be done in order")
+
+(=>
+	(instance ?Process SequenceProcess)
+	(forall (?Component1 ?Component2)
+		(=>
+			(and
+				(processComponent ?Component1 ?Process)
+				(processComponent ?Component2 ?Process)
+				(equal ?Time1 (WhenFn ?Component1))
+				(equal ?Time2 (WhenFn ?Component2)))
+			(or
+				(before (EndFn ?Time1) (BeginFn ?Time2))
+				(before (EndFn ?Time2) (BeginFn ?Time1))))))
+
+;; definition of SplitProcess
+(subclass SplitProcess CompositeProcess)
+(documentation SplitProcess "The components of a Split process are a bag of subprocesses to be executed concurrently")
+
+(=>
+	(instance ?Process SplitProcess)
+	(forall (?Component1 ?Component2)
+		(=>
+			(and
+				(processComponent ?Component1 ?Process)
+				(processComponent ?Component2 ?Process)
+				(equal ?Time1 (WhenFn ?Component1))
+				(equal ?Time2 (WhenFn ?Component2)))
+			(overlapsTemporally ?Time1 ?Time2))))
+
+
+;; constants from Financial Ontology
+
+;; definition of agreementMember
+(instance agreementMember BinaryRelation)
+(domain agreementMember 1 Agreement)
+(domain agreementMember 2 Agent)
+(documentation agreementMember "(agreementMember ?Agreement ?Agent) means that ?Agent is one of the participants of the Agreement")
+
+
+;; constants from QoS ontology
+
+;; definition of ComputationalSystem
+(subclass ComputationalSystem Artifact)
+(documentation ComputationalSystem "Instances of ComputationalSystems include instances of SoftwareSystems, HardwareSystems, and ComputerNetworks")
+
+
+;; definition of Server
+(subclass Server ComputationalSystem)
+(documentation Server "A computer in a network shared by multiple users. The term may refer to both the hardware and software or just the software that performs the service.")
+
+
+;;definition of ComputerProcess
+(subclass ComputerProcess Process)
+(documentation ComputerProcess "An instance of ComputerProcess is a process which manipulates data in the computer")
+
+
+;; definition of programRunning
+(domain programRunning 1 ComputerProcess)
+(domain programRunning 2 ComputerProgram)
+(documentation programRunning
+"(programRunning ?Process ?Program) means that the ComputerProcess ?Process is executing the ComputerProgram ?Program")
+
+
+;;definition of responseTime
+(instance responseTime BinaryRelation)
+(domain responseTime 1 UserRequest)
+(domain responseTime 2 TimeInterval)
+(documentation responseTime "The time it takes for the computer to comply with a user's request, such as looking up a customer record.")
+
+
+;; definition of UserRequest
+(subclass UserRequest ComputerProcess)
+(documentation UserRequest "A request made by a ComputerUser, such as looking up a customer record")
+
+(=>
+	(instance ?Request UserRequest)
+	(exists (?User)
+		(and
+			(instance ?User ComputerUser)
+			(effector ?Request ?User))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Additional service ontology
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;Below are concepts found in the DAML-S specs but which do not occur in SUMO nor in Olga Babko-Malaya's file OntologyOfServices.txt.
+
+(subclass StarRating ServiceRating)
+
+(subclass Identifier SymbolicString)
+
+;;definition of serviceParameter
+(documentation serviceParameter "An expandable list of RDF properties that may accompany a profile description.")
+(instance serviceParameter AsymmetricRelation)
+(domain serviceParameter 1 ServiceProfile)
+(domain serviceParameter 2 Entity)
+
+(subrelation maxResponseTime serviceParameter)
+(subrelation averageResponseTime serviceParameter)
+
+;;definition of serviceCategory
+(documentation serviceCategory "The Service Category refers to an ontology of services that may be on offer. High level services may include: Products, Problem Solving Capabilities, Commercial Services, Information, etc.")
+(subrelation serviceCategory AsymmetricRelation)
+(domain serviceCategory 1 ServiceProfile)
+(domain serviceCategory 2 Entity)
+
+;;definition of serviceName
+(documentation serviceName "A  relation between  instances of the class ServiceProvider and the name(s) of a service.")
+(instance serviceName AsymmetricRelation)
+(domain serviceName 1 ServiceProvider)
+(domain serviceName 2 ServiceName)
+(subclass ServiceName Identifier)
+
+(=>
+	(instance ?SERVICE ServiceProvider)
+	(exists (?NAME )
+		(name  ?SERVICE ?NAME    )))
+
+;;definition of serviceFax
+(documentation serviceFax "A relation between  instances of the class ServiceProvider and the fax number(s) of a service.")
+(instance serviceFax AsymmetricRelation)
+(domain serviceFax 1 ServiceProvider)
+(domain serviceFax 2 ServiceFax)
+(subclass ServiceFAX Identifier)
+(=>
+	(instance ?SERVICE ServiceProvider)
+	(exists (?FAX )
+		(fax  ?SERVICE ?FAX    )))
+
+;;definition of serviceEmail
+(documentation serviceEmail "A  relation between  instances of the class ServiceProvider and the email address(es) of a service.")
+(instance serviceEmail AsymmetricRelation)
+(domain serviceEmail 1 ServiceProvider)
+(domain serviceEmail 2 ServiceEmail)
+(subclass ServiceEmail Identifier)
+
+(=>
+	(instance ?SERVICE ServiceProvider)
+	(exists (?EMAIL )
+		(email  ?SERVICE ?EMAIL    )))
+
+;;definition of serviceAddress
+(documentation serviceAddress "A  relation between  instances of the class ServiceProvider and the postal address(es) of a service.")
+(instance serviceAddress AsymmetricRelation)
+(domain serviceAddress 1 ServiceProvider)
+(range serviceAddress ServiceAddress)
+(subclass ServiceAddress Identifier)
+
+(=>
+	(instance ?SERVICE ServiceProvider)
+	(exists (?ADDRESS )
+		(physicalAddress  ?SERVICE ?ADDRESS    )))
+
+;;definition of servicePhone
+(documentation servicePhone "A  relation between  instances of the class ServiceProvider and the phone number(s) of a service.")
+(instance servicePhone AsymmetricRelation)
+(domain servicePhone 1 ServiceProvider)
+(domain servicePhone 2 ServicePhoneNumber)
+(subclass ServicePhone Identifier)
+(=>
+	(instance ?SERVICE ServiceProvider)
+	(exists (?PHONE )
+		(phone  ?SERVICE ?PHONE    )))
+
+;;definition of serviceWebUrl
+(documentation serviceWebUrl "A  relation between  instances of the class ServiceProvider and the webUrl(s) of a service.")
+(instance serviceWebUrl AsymmetricRelation)
+(domain serviceWebUrl 1 ServiceProvider)
+(domain serviceWebUrl 2 ServiceWebUrl)
+(subclass ServiceWebURL Identifier)
+
+(=>
+	(instance ?SERVICE ServiceProvider)
+	(exists (?WEBURL)
+		(webURL ?SERVICE ?WEBURL  )))
+
+
+
+(documentation ProcessControlStatus "The set of process control statuses.")
+(subclass ProcessControlStatus Formula)
+(instance OnGoing ProcessControlStatus)
+(instance Aborted ProcessControlStatus)
+(instance Suspended ProcessControlStatus)
+(instance Cancelled ProcessControlStatus)
+(instance Completed ProcessControlStatus)
+
+;;definition of controlStatus
+(documentation controlStatus)
+(instance controlStatus AsymmetricRelation)
+(domain controlStatus 1 Process)
+(domain controlStatus 2 ProcessControlStatus)
+
+(=>
+	(instance ?PROCESS Process)
+	(exists (?STATUS)
+		(currentStatus ?PROCESS ?STATUS  )))
+
+;;From the Merge ontology
+  (instance inverse SymmetricRelation)
+  (domain inverse 1 BinaryRelation)
+  (domain inverse 2 BinaryRelation)
+  (documentation inverse "The inverse of a &%BinaryRelation is a relation in which all the tuples of the original relation are reversed. In other words, one &%BinaryRelation is the inverse of another if they are equivalent when their arguments are swapped.")
+
+;;definition of some inverse relations for DAML-S
+(inverse describesAModel serviceIsDescribedByModel)
+(inverse presentsAProfile profileIsPresentedByService)
+(inverse supportsAGrounding groundingSupportsService)
+(inverse providesAService isProvidedByService)
+
+;;definition of processParticipant
+(documentation processParticipant "A (process) participant is a type of parameter and outputs are properties of events. The top level ontology doesn't restrict them at all. A participant can be any kind of daml object (Thing).  Specific events will specialize this property by restricting the range to types of agents, objects, entities, etc.")
+(instance processParticipant AsymmetricRelation)
+(subrelation processParticipant processParameter)
+(domain processParticipant 1 ComputerProcess)
+(domain processParticipant 2 Entity)
+
+;;definition of processInput
+(documentation processInput "An input is a type of parameter and are properties of events. The top level ontology doesn't restrict them at all. An input can be any kind of daml object (Thing).  Specific events will specialize this property by restricting the range appropriately; such as required inputs, derivable inputs, etc.")
+(instance processInput AsymmetricRelation)
+(subrelation processInput processParameter)
+
+(domain processInput 1 ComputerProcess)
+(domain processInput 2 Entity)
+
+;;definition of processOutput
+(documentation processOutput "An output is a type of parameter and outputs are properties of events. The top level ontology doesn't restrict them at all. An output can be any kind of daml object (Thing).  Specific events will specialize this property by restricting the range.")
+(instance processOutput AsymmetricRelation)
+(subrelation processOutput processParameter)
+(domain processOutput 1 ComputerProcess)
+(domain processOutput 2 Entity)
+
+;;definition of processName
+(documentation processName "Processes have a name, parameter, precondition, and effect.")
+(instance processName AsymmetricRelation)
+(domain processName 1 ComputerProcess)
+(domain processName 2 Formula)
+
+
+;;definition of serviceTextDescription
+(documentation serviceTextDescription "The relation between a service and a text which describes the service." )
+(instance serviceTextDescription AsymmetricRelation)
+(domain serviceTextDescription 1 ServiceName)
+(domain serviceTextDescription 2 TextDescription)
+
+(=>
+	(instance ?SERVICE ServiceName)
+	(exists (?TEXT)
+		(serviceTextDescription ?SERVICE ?TEXT  )))
+
+;;definition of the class TextDescription
+(documentation TextDescription "The TextDescription provides a briefdescription of the service. This would typically appear within an advertisement to summarise what the service offers, or within a request to describe what is being requested.")
+(subclass TextDescription Text)
+
+;;definition of role
+(documentation role "This property links the service profile to a ServiceActor. The ServiceActor is the entity that provides the service or makes the request.  See the description of ServiceActor. Different roles can be subpropertied from the property role to portray specific roles.")
+(instance role AsymmetricRelation)
+(domain role 1 ServiceProfile)
+(domain role 2 ServiceActor)
+
+(=> (instance ?PROCESS UsingAService)(exists ?ROLE (role ?PROCESS ?ROLE)))
+
+(documentation ServiceActor "The class of service users and service providers.")
+(equal ServiceActor (UnionFn ServiceProvider ServiceUser))
+
+;;The definitions which follow pertain to the DAML-S notions of sequence.
+;;definition of the class Sequence
+(documentation Sequence "The class of functions whose domain is a subclass of the natural numbers")
+(subclass Sequence UnaryFunction)
+
+;;Axioms
+(<=> (instance ?SEQ Sequence) (and (instance ?SEQ UnaryFunction) (subclass (DomainFn ?SEQ) Integer) (subclass (RangeFn ?SEQ) Entity)))
+
+(=> (instance ?SEQ Sequence) (exists ?REL (and (equal (DomainFn ?REL) (RangeFn ?SEQ)) (forall (?X ?Y ?M ?N) (=> (and (instance ?X (RangeFn ?SEQ)) (instance ?Y (RangeFn ?SEQ)) (instance ?N Integer) (instance ?M Integer) (equal (AssignmentFn ?SEQ ?N) ?X) (equal (AssignmentFn ?SEQ ?M) ?Y) ) (<=> (holds ?REL ?X ?Y) (lessThan ?N ?M) ) ) ) ) ) )
+
+(=> (holds ?REL ?X ?Y) (exists ?SEQ (and(instance ?SEQ Sequence) (equal (IthMemberOfSeq ?SEQ 1) ?X) (equal (IthMemberOfSeq ?SEQ 2) ?Y) (equal (LengthOfSeq ?SEQ) 2))))
+
+(=>(instance ?SEQ Sequence)(exists ?CLASS(<=> (instance ?X ?CLASS)(exists ?INT (equal ?X (ithMemberOfSeq ?SEQ ?INT))))))
+
+;;LengthOfSeqFn
+(documentation LengthOfSeqFn "The function which returns the length of an input sequence.")
+(subclass LengthOfSeqFn UnaryFn)
+(domain LengthOfSeqFn 1 Sequence)
+(range LengthOfSeqFn Integer)
+
+;;Axioms
+(equal (LengthOfSeqFn NullSeq) 0)
+(=> (and (instance ?SEQ Sequence)(not (equal ?SEQ NullSeq))(equal(CardinalityFn (DomainFn ?SEQ)) ?N))(equal(LengthOfSeqFn ?SEQ) ?N))
+
+;;HeadOfSeqFn
+(documentation HeadOfSeqFn "A function which returns, for an input sequence S, that sequence which consists of the first member of the sequence S, if it exists, or the NullSet if the sequence is the NullSequence.")
+(subclass HeadOfSeqFn UnaryFn)
+(domain HeadOfSeqFn Sequence)
+(range HeadOfSeqFn Sequence)
+
+;;Axioms
+(equal (InitialMemberSeqFn NullSeq) NullSet)
+(=> (and (instance ?SEQ Seqence)(equal (CardinalityFn ?SEQ) 1)) (equal (HeadOfSeqFn ?SEQ) ?SEQ))
+
+
+;;TailOfSeqFn
+(documentation TailOfSeqFn "A function which returns, for an input sequence S, that sequence which results from S after removing S's first element, if the length of S is greater than 1. If the length of S is 1 or 0, then this function returns the NullSeq.")
+(subclass TailOfSeqFn UnaryFn)
+(domain TailOfSeqFn Sequence)
+(range TailOfSeqFn Sequence)
+
+;;ReverseSeqFn
+(documentation ReverseSeqFn "A function which returns the result of reversing the order of elements of a sequence.")
+(subclass ReverseSeqFn UnaryFunction)
+(domain ReverseSeqFn Sequence)
+(range ReverseSeqFn Sequence)
+
+
+;;IthMemberOfSeqFn
+(documentation IthMemberOfSeqFn "This function returns the Ith member of a sequence S, where I is an integer and I is greater than 0 and less than or equal to the length of S. If I is 0 or is greater than the length of S, or if S is the NullSeq, then this function returns the null set.")
+(subclass IthMemberOfSeqFn BinaryFunction)
+(domain IthMemberOfSeqFn 1 Sequence)
+(domain IthMemberOfSeqFn 2 Integer)
+(range IthMemberofSeqFn Entity)
+
+;;Axioms
+(=> (and (equal (LengthOfSeqFn ?SEQ) ?N)(greaterThan ?M ?N)) (equal (IthMemberOfSeqFn ?M ?SEQ) NullSet))
+(=> (equal LengthOfSeqFn 0)(equal (IthMemberOfSeqFn ?M ?SEQ) NullSeq))
+
+
+;;ConcatSeqFn
+(documentation ConcatSeqFn "This function, which takes as input two sequences, S1 and S2, in that order, returns the concatenation of the sequences, in the order S1^S2.")
+(subclass ConcatSeqFn BinaryFunction)
+(domain ConcatSeqFn 1 Sequence)
+(domain ConcatSeqFn 2 Sequence)
+(range ConcatSeqFn Sequence)
+
+
+;;NullSeq
+(documentation NullSeq "The null sequence, which has length 0.")
+(instance NullSeq Sequence)
+(equal (LengthOfSeqFn NullSeq) 0)
+
+;;OneToOneUnaryFunction
+(documentation OneToOneUnaryFunction "The class of functions which are one to one; i.e., a function F is one to one if and only if for all X, Y in the domain of F, if X is not identical to Y, then F(X) is not identical to F(Y).")
+(subclass OneToOneUnaryFunction UnaryFunction)
+
+;;Axioms
+(<=> (instance ?FUN OneToOneUnaryFunction) (and (instance ?FUN Function) (forall (?X ?Y) (=> (and (instance ?X (DomainFn ?FUN)) (instance ?Y (DomainFn ?FUN)) (not (equal ?X ?Y))) (not (equal ((AssignmentFn ?FUN) ?X) ((AssignmentFn ?FUN) ?Y)))))))
+
+
+;;homomorphism
+(documentation homomorphism "A function, FUN, defines a homomophism between two relations, REL1 and REL2, if and only if, for all X and Y, if REL1(X,Y) then  REL2(FUN(X),FUN(Y)).")
+(domain homomorphism 1 Function)
+(domain homomorphism 2 Relation)
+(domain homomorphism 3 Relation)
+(<=>(homomorphism ?FUN ?REL1 ?REL2) (=>(holds ?REL1 ?X ?Y)(holds ?REL2 ((AssignmentFn ?FUN) ?X) ((AssignmentFn ?FUN ?Y)))))
+
+;;isomorphism
+(documentation isomorphism "A function, FUN, defines a homomophism between two relations, REL1 and REL2, if and only if, for all X and Y, REL1(X,Y) if and only if REL2(FUN(X),FUN(Y)).")
+(domain isomorphism 1 Function)
+(domain isomorphism 2 Relation)
+(domain isomorphism 3 Relation)
+(<=>(isomorphism ?FUN ?REL1 ?REL2) (<=>(holds ?REL1 ?X ?Y)(holds ?REL2 ((AssignmentFn ?FUN) ?X) ((AssignmentFn ?FUN ?Y)))))
+
+;;MaxSeqFn
+(documentation MaxSeqFn "This function returns the maximum element of a sequence of integers.")
+(subclass MaxSeqFn UnaryFunction)
+(domain MaxSeqFn 1 Sequence)
+(range MaxSeqFn Integer)
+
+;;MinSeqFn
+(documentation MinSeqFn "This function returns the minimum value of a sequence of integers.")
+(subclass MinSeqFn UnaryFn)
+(domain MinSeqFn 1 Sequence)
+(range MinimumFn Integer)
+
+
+;;Pairing axiom
+(=>(holds ?REL ?X ?Y)(exists ?CLASS(and (instance ?CLASS Class)(instance ?X Class)(instance ?Y Class) (forall ?Z (<=>(instance ?Z ?CLASS)(or (equal ?Z ?Z)(equal ?Z ?Y)))))))
